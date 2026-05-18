@@ -143,6 +143,18 @@ describe('MarketStreamManager', () => {
       expect(cache.get('BTCUSDT')?.ticker).toEqual(ticker)
     })
 
+    it('normalizes the ticker symbol to uppercase when updating the cache', () => {
+      const { cache, wsAdapter, manager } = makeManager()
+      manager.subscribe('socket-1', ['BTCUSDT'])
+
+      const onTicker = vi.mocked(wsAdapter.onTicker).mock.calls[0]?.[0]!
+      // Simulate an adapter that emits a lowercase symbol (defensive)
+      const ticker = makeTicker('btcusdt')
+      onTicker(ticker)
+
+      expect(cache.get('BTCUSDT')?.ticker).toEqual(ticker)
+    })
+
     it('broadcasts to all subscribed sockets', () => {
       const { wsAdapter, manager } = makeManager()
       const broadcast = vi.fn()

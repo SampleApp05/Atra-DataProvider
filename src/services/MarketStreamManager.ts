@@ -157,11 +157,13 @@ export class MarketStreamManager {
   // MARK: Private — Incoming Ticker Flow
 
   private _handleIncomingTicker(ticker: MarketTicker): void {
+    const symbol = ticker.symbol.toUpperCase()
+
     // Step 1 — Update cache
-    this.cache.set(ticker.symbol, { ticker, updatedAt: Date.now() })
+    this.cache.set(symbol, { ticker, updatedAt: Date.now() })
 
     // Step 2 — Find subscribed sockets
-    const entry = this.symbolRegistry.get(ticker.symbol)
+    const entry = this.symbolRegistry.get(symbol)
 
     if (entry === undefined || entry.subscribers.size === 0) {
       return
