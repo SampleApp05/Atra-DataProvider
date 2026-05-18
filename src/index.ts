@@ -2,33 +2,36 @@
 
 import { BinanceRestAdapter, BinanceWsAdapter } from './adapters/index.js'
 import { InMemoryPriceCache } from './cache/index.js'
-import { PriceService, SymbolCatalogService } from './services/index.js'
+import { PriceService, SymbolCatalogService, MarketStreamManager } from './services/index.js'
 import { createServer } from './rest/index.js'
+import { WebSocketGateway } from './ws/index.js'
 
 // MARK: - Bootstrap
 
 async function bootstrap() {
-  // Step 3 — Adapters
+  // Adapters
   const restAdapter = new BinanceRestAdapter()
   const wsAdapter = new BinanceWsAdapter()
 
-  // Step 2 — Cache
+  // Cache
   const priceCache = new InMemoryPriceCache()
 
-  // Step 4 — Price Service
+  // Services
   const priceService = new PriceService(priceCache, restAdapter)
-
-  // Step 5 — Symbol Catalog (load on startup)
   const symbolCatalogService = new SymbolCatalogService(restAdapter)
+  const streamManager = new MarketStreamManager(priceCache, wsAdapter)
+
+  // Load symbol catalog on startup
   await symbolCatalogService.initialize()
 
-  // Step 7 — Connect WebSocket adapter (Steps 8/9 will attach handlers)
+  // Connect Binance WebSocket
   wsAdapter.connect()
 
-  // Step 6 — REST server
-  createServer(symbolCatalogService, priceService)
+  // HTTP server (REST API)
+  const httpServer = createServer(symbolCatalogService, priceService)
 
-  return { priceService, symbolCatalogService, wsAdapter }
+  // WebSocket Gateway — attaches to the same HTTP server
+  new WebSocketGateway(httpServer, streamManager)
 }
 
 bootstrap().catch(console.error)

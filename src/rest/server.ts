@@ -1,6 +1,7 @@
 // MARK: - HTTP Server
 
 import express from 'express'
+import type { Server } from 'http'
 import { Config } from '../config/index.js'
 import { createRouter } from './router.js'
 import type { SymbolCatalogService } from '../services/SymbolCatalogService.js'
@@ -11,7 +12,7 @@ import type { PriceService } from '../services/PriceService.js'
 export function createServer(
   symbolCatalogService: SymbolCatalogService,
   priceService: PriceService
-) {
+): Server {
   const app = express()
 
   app.use(express.json())
