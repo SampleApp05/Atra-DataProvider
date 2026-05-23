@@ -1,352 +1,230 @@
-# Atra-DataProvider
+# ATRA — Backend Monorepo
 
-Real-time market data aggregation service for the ATRA platform.  
-Aggregates Binance market data and exposes it to clients via a REST API and a WebSocket feed.
+A pnpm workspace + Turborepo monorepo for the ATRA platform backend.  
+All services are TypeScript-first, ESM, and share common packages via workspace aliases.
 
 ---
 
 ## Table of Contents
 
 - [Getting Started](#getting-started)
+- [Workspace Structure](#workspace-structure)
+- [Apps](#apps)
+- [Packages](#packages)
+- [Testing](#testing)
 - [Environment Variables](#environment-variables)
-- [REST API](#rest-api)
-  - [GET /search](#get-search)
-  - [GET /prices](#get-prices)
-- [WebSocket API](#websocket-api)
-  - [Connecting](#connecting)
-  - [Subscribe](#subscribe)
-  - [Unsubscribe](#unsubscribe)
-  - [Receiving Updates](#receiving-updates)
-  - [Full Client Example](#full-client-example)
-- [Data Types](#data-types)
-- [Running Tests](#running-tests)
 
 ---
 
 ## Getting Started
 
 ```bash
-# 1. Install dependencies
-npm install
+# 1. Install all dependencies
+pnpm install
 
-# 2. Copy the environment template and fill in your values
-cp .env.example .env
+# 2. Build all packages and apps
+pnpm turbo build
 
-# 3. Build
-npm run build
-
-# 4. Start
-npm start
+# 3. Run all tests
+pnpm turbo test
 ```
 
-The server will start on the port defined by `PORT` in your `.env` (default `3000`).
+To run a single app in development mode:
+
+```bash
+pnpm --filter @atra/auth-service dev
+pnpm --filter @atra/market-service dev
+```
+
+---
+
+## Workspace Structure
+
+```
+apps/
+  auth-service/         # Wallet-based authentication & session management
+  market-service/       # Real-time market data aggregation (Binance)
+  api-gateway/          # (planned) Unified API proxy & rate limiting
+  notification-service/ # (planned) Push / email notifications
+  portfolio-service/    # (planned) Portfolio tracking
+  worker-service/       # (planned) Background job processor
+
+packages/
+  database/             # Drizzle ORM schema, migrations, and query types
+  blockchain/           # (planned) On-chain interaction utilities
+  config/               # (planned) Typed environment config loader
+  logger/               # (planned) Structured JSON logger (pino)
+  sdk/                  # (planned) TypeScript client SDK
+  shared-types/         # (planned) Shared TypeScript type definitions
+  shared-utils/         # (planned) Shared utility functions
+```
+
+---
+
+## Apps
+
+<details>
+<summary><strong>auth-service</strong> — Wallet-based authentication, sessions, roles &amp; recovery</summary>
+
+Handles the full authentication lifecycle for ATRA wallet accounts. Authentication is challenge/signature based — no passwords. Includes JWT session management, multi-wallet role assignment, ownership transfer, and account recovery.
+
+- **156 tests across 16 test files**
+- Stack: Express, ethers.js, jsonwebtoken, Drizzle ORM, postgres.js
+- Port: `3001` (default)
+
+[Full documentation →](./apps/auth-service/README.md)
+
+</details>
+
+<details>
+<summary><strong>market-service</strong> — Real-time market data aggregation</summary>
+
+Aggregates live Binance market data and exposes it to clients via a REST API and WebSocket feed. Supports symbol search, live price streams, OHLCV candles, order book snapshots, and recent trades.
+
+- **84 tests**
+- Stack: Express, ws, Binance REST + WebSocket streams
+- Port: `3000` (default)
+
+[Full documentation →](./apps/market-service/README.md)
+
+</details>
+
+<details>
+<summary><strong>api-gateway</strong> — (planned) Unified API proxy &amp; routing</summary>
+
+Will provide a single entry point for all ATRA backend services — request routing, rate limiting, and JWT validation at the edge.
+
+[Full documentation →](./apps/api-gateway/README.md)
+
+</details>
+
+<details>
+<summary><strong>notification-service</strong> — (planned) Push &amp; email notifications</summary>
+
+Will handle event-driven notifications (email, WebSocket push) triggered by account and market events.
+
+[Full documentation →](./apps/notification-service/README.md)
+
+</details>
+
+<details>
+<summary><strong>portfolio-service</strong> — (planned) Portfolio tracking</summary>
+
+Will provide per-account portfolio snapshots, P&L calculations, and asset allocation views.
+
+[Full documentation →](./apps/portfolio-service/README.md)
+
+</details>
+
+<details>
+<summary><strong>worker-service</strong> — (planned) Background job processor</summary>
+
+Will run scheduled and event-driven background tasks (e.g. session cleanup, price snapshots, report generation).
+
+[Full documentation →](./apps/worker-service/README.md)
+
+</details>
+
+---
+
+## Packages
+
+<details>
+<summary><strong>@atra/database</strong> — Drizzle ORM schema, migrations &amp; query types</summary>
+
+Single source of truth for the Postgres database schema. Exports typed Drizzle table definitions, enums, and inferred row types consumed by all services.
+
+- Tables: `accounts`, `wallets`, `sessions`, `nonces`, `audit_logs`
+- Enums: `wallet_role`, `nonce_purpose`, `audit_action`
+
+[Full documentation →](./packages/database/README.md)
+
+</details>
+
+<details>
+<summary><strong>@atra/blockchain</strong> — (planned) On-chain interaction utilities</summary>
+
+Will expose typed wrappers around ethers.js for contract calls, event subscriptions, and address utilities.
+
+[Full documentation →](./packages/blockchain/README.md)
+
+</details>
+
+<details>
+<summary><strong>@atra/config</strong> — (planned) Typed environment config loader</summary>
+
+Will provide a `loadConfig()` helper that validates and types `.env` values at startup, failing fast on missing required variables.
+
+[Full documentation →](./packages/config/README.md)
+
+</details>
+
+<details>
+<summary><strong>@atra/logger</strong> — (planned) Structured JSON logger</summary>
+
+Will wrap pino to provide a consistent structured logging interface across all services, outputting newline-delimited JSON.
+
+[Full documentation →](./packages/logger/README.md)
+
+</details>
+
+<details>
+<summary><strong>@atra/sdk</strong> — (planned) TypeScript client SDK</summary>
+
+Will provide type-safe wrappers for all ATRA REST and WebSocket APIs, with automatic token refresh and pagination helpers.
+
+[Full documentation →](./packages/sdk/README.md)
+
+</details>
+
+<details>
+<summary><strong>@atra/shared-types</strong> — (planned) Shared TypeScript type definitions</summary>
+
+Pure `.d.ts` package exporting common types (accounts, sessions, market data, pagination) used across all apps and packages.
+
+[Full documentation →](./packages/shared-types/README.md)
+
+</details>
+
+<details>
+<summary><strong>@atra/shared-utils</strong> — (planned) Shared utility functions</summary>
+
+Zero-dependency utility functions for pagination cursors, address normalisation, duration parsing, and API response helpers.
+
+[Full documentation →](./packages/shared-utils/README.md)
+
+</details>
+
+---
+
+## Testing
+
+```bash
+# Run all tests across the monorepo
+pnpm turbo test
+
+# Run tests for a specific app
+pnpm --filter @atra/auth-service test
+pnpm --filter @atra/market-service test
+
+# Watch mode
+pnpm --filter @atra/auth-service test -- --watch
+```
+
+| App / Package | Tests | Framework |
+|---|---|---|
+| `auth-service` | 156 (16 files) | Vitest |
+| `market-service` | 84 | Vitest |
 
 ---
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` before running.
-
-| Variable             | Required | Default                              | Description                              |
-|----------------------|----------|--------------------------------------|------------------------------------------|
-| `BINANCE_BASE_URL`   | ✅       | `https://api.binance.com`            | Binance REST API base URL                |
-| `BINANCE_WS_BASE_URL`| ✅       | `wss://stream.binance.com:9443/ws`   | Binance WebSocket stream URL             |
-| `PRICE_TTL_MS`       | ❌       | `30000`                              | Price cache TTL in milliseconds          |
-| `PORT`               | ❌       | `3000`                               | HTTP server port                         |
-
----
-
-## REST API
-
-Base URL: `http://localhost:3000`
-
-All responses are JSON. Error responses follow the shape:
-
-```json
-{ "error": "Human-readable error message" }
-```
-
----
-
-### GET /search
-
-Search for tradable symbols by name, base asset, or quote asset.
-
-**Query Parameters**
-
-| Parameter | Type   | Required | Description                        |
-|-----------|--------|----------|------------------------------------|
-| `q`       | string | ✅       | Case-insensitive substring to match |
-
-**Example Request**
-
-```
-GET /search?q=btc
-```
-
-**Example Response** `200 OK`
-
-```json
-[
-  {
-    "symbol": "BTCUSDT",
-    "baseAsset": "BTC",
-    "quoteAsset": "USDT"
-  },
-  {
-    "symbol": "BTCEUR",
-    "baseAsset": "BTC",
-    "quoteAsset": "EUR"
-  }
-]
-```
-
-**Error Responses**
-
-| Status | Condition                         |
-|--------|-----------------------------------|
-| `400`  | `q` parameter is missing or empty |
-
----
-
-### GET /prices
-
-Fetch current 24-hour ticker data for one or more symbols.
-
-**Query Parameters**
-
-| Parameter | Type   | Required | Description                                          |
-|-----------|--------|----------|------------------------------------------------------|
-| `symbols` | string | ✅       | Comma-separated list of symbols (case-insensitive)   |
-
-**Example Request**
-
-```
-GET /prices?symbols=BTCUSDT,ETHUSDT
-```
-
-**Example Response** `200 OK`
-
-```json
-[
-  {
-    "symbol": "BTCUSDT",
-    "price": 43125.12,
-    "changePercent24h": 2.5,
-    "high24h": 43500.00,
-    "low24h": 42000.00,
-    "volume24h": 123456789.00,
-    "ts": 1710000000
-  },
-  {
-    "symbol": "ETHUSDT",
-    "price": 2250.50,
-    "changePercent24h": -1.2,
-    "high24h": 2300.00,
-    "low24h": 2200.00,
-    "volume24h": 98765432.00,
-    "ts": 1710000000
-  }
-]
-```
-
-**Error Responses**
-
-| Status | Condition                                  |
-|--------|--------------------------------------------|
-| `400`  | `symbols` parameter is missing or empty    |
-| `502`  | Upstream Binance request failed            |
-
-**Pseudo-code (iOS / Swift)**
-
-```swift
-let url = URL(string: "http://localhost:3000/prices?symbols=BTCUSDT,ETHUSDT")!
-let (data, _) = try await URLSession.shared.data(from: url)
-let tickers = try JSONDecoder().decode([MarketTicker].self, from: data)
-```
-
----
-
-## WebSocket API
-
-The WebSocket server runs on the same port as the REST API.
-
-```
-ws://localhost:3000
-```
-
-All messages are JSON-encoded text frames.
-
----
-
-### Connecting
-
-```swift
-// Swift pseudo-code
-let socket = URLSessionWebSocketTask(url: URL(string: "ws://localhost:3000")!)
-socket.resume()
-```
-
----
-
-### Subscribe
-
-Send this message to begin receiving real-time price updates for one or more symbols.
-
-**Client → Server**
-
-```json
-{
-  "type": "subscribe",
-  "symbols": ["BTCUSDT", "ADAUSDT"]
-}
-```
-
-| Field     | Type       | Description                              |
-|-----------|------------|------------------------------------------|
-| `type`    | `string`   | Must be `"subscribe"`                    |
-| `symbols` | `string[]` | List of symbols to subscribe to          |
-
----
-
-### Unsubscribe
-
-Send this message to stop receiving updates for specific symbols.
-
-**Client → Server**
-
-```json
-{
-  "type": "unsubscribe",
-  "symbols": ["ADAUSDT"]
-}
-```
-
-| Field     | Type       | Description                              |
-|-----------|------------|------------------------------------------|
-| `type`    | `string`   | Must be `"unsubscribe"`                  |
-| `symbols` | `string[]` | List of symbols to unsubscribe from      |
-
----
-
-### Receiving Updates
-
-The server pushes a `ticker` message whenever a subscribed symbol's price changes.
-
-**Server → Client**
-
-```json
-{
-  "type": "ticker",
-  "data": {
-    "symbol": "BTCUSDT",
-    "price": 43125.12,
-    "changePercent24h": 2.5,
-    "high24h": 43500.00,
-    "low24h": 42000.00,
-    "volume24h": 123456789.00,
-    "ts": 1710000000
-  }
-}
-```
-
-| Field                    | Type     | Description                                 |
-|--------------------------|----------|---------------------------------------------|
-| `type`                   | `string` | Always `"ticker"`                           |
-| `data.symbol`            | `string` | Trading pair symbol e.g. `"BTCUSDT"`        |
-| `data.price`             | `number` | Last trade price                            |
-| `data.changePercent24h`  | `number` | 24-hour price change percentage             |
-| `data.high24h`           | `number` | 24-hour high price                          |
-| `data.low24h`            | `number` | 24-hour low price                           |
-| `data.volume24h`         | `number` | 24-hour quote asset volume                  |
-| `data.ts`                | `number` | Event timestamp (Unix ms)                   |
-
----
-
-### Full Client Example
-
-**Swift pseudo-code**
-
-```swift
-// 1. Connect
-let socket = URLSessionWebSocketTask(url: URL(string: "ws://localhost:3000")!)
-socket.resume()
-
-// 2. Subscribe to symbols
-let subscribeMsg = """
-  { "type": "subscribe", "symbols": ["BTCUSDT", "ETHUSDT"] }
-"""
-socket.send(.string(subscribeMsg)) { error in
-    if let error { print("Send error:", error) }
-}
-
-// 3. Listen for ticker updates
-func receiveNext() {
-    socket.receive { result in
-        switch result {
-        case .success(.string(let text)):
-            let data = Data(text.utf8)
-            let msg = try? JSONDecoder().decode(SocketMessage.self, from: data)
-            if msg?.type == "ticker" {
-                updateUI(with: msg?.data)
-            }
-        default:
-            break
-        }
-        receiveNext() // keep listening
-    }
-}
-receiveNext()
-
-// 4. Unsubscribe when done
-let unsubscribeMsg = """
-  { "type": "unsubscribe", "symbols": ["ETHUSDT"] }
-"""
-socket.send(.string(unsubscribeMsg))
-
-// 5. Disconnect
-socket.cancel(with: .goingAway, reason: nil)
-```
-
----
-
-## Data Types
-
-### MarketTicker
-
-```typescript
-type MarketTicker = {
-  symbol: string          // e.g. "BTCUSDT"
-  price: number           // last trade price
-  changePercent24h: number // 24h price change %
-  high24h: number         // 24h high
-  low24h: number          // 24h low
-  volume24h: number       // 24h quote volume
-  ts: number              // event timestamp (Unix ms)
-}
-```
-
-### SymbolMeta
-
-```typescript
-type SymbolMeta = {
-  symbol: string      // e.g. "BTCUSDT"
-  baseAsset: string   // e.g. "BTC"
-  quoteAsset: string  // e.g. "USDT"
-}
-```
-
----
-
-## Running Tests
+Each app has its own `.env.example`. Copy it to `.env` before running:
 
 ```bash
-# Run all tests once
-npm test
-
-# Watch mode
-npm run test:watch
-
-# With coverage report
-npm run test:coverage
+cp apps/auth-service/.env.example apps/auth-service/.env
+cp apps/market-service/.env.example apps/market-service/.env
 ```
+
+See each app's README for the full variable reference.

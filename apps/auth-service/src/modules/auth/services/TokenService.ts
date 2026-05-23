@@ -1,7 +1,7 @@
 // MARK: - Token Service
 // Signs / verifies JWTs and generates opaque refresh tokens.
 
-import jwt from 'jsonwebtoken'
+import jwt, { type SignOptions } from 'jsonwebtoken'
 import { randomBytes, createHash } from 'crypto'
 
 // MARK: - Types
@@ -20,9 +20,15 @@ export interface TokenPair {
 }
 
 // MARK: - Constants
+// Defaults match the values below; override via .env.
+// ACCESS_TOKEN_TTL        — jsonwebtoken duration string  (default: 15m)
+// REFRESH_TOKEN_TTL_DAYS  — integer days                  (default: 30)
 
-const ACCESS_TOKEN_TTL  = '15m'
-const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
+const ACCESS_TOKEN_TTL  =
+  process.env['ACCESS_TOKEN_TTL'] ?? '15m'
+
+const REFRESH_TOKEN_TTL_MS =
+  parseInt(process.env['REFRESH_TOKEN_TTL_DAYS'] ?? '30', 10) * 24 * 60 * 60 * 1000
 
 // MARK: - Service
 
@@ -46,10 +52,11 @@ export class TokenService {
    * Signs a 15-minute JWT containing { accountId, sessionId, roles }.
    */
   signAccessToken(payload: AccessTokenPayload): string {
-    return jwt.sign(payload, this.secret, {
-      expiresIn: ACCESS_TOKEN_TTL,
+    const opts: SignOptions = {
+      expiresIn: ACCESS_TOKEN_TTL as SignOptions['expiresIn'],
       algorithm: 'HS256',
-    })
+    }
+    return jwt.sign(payload, this.secret, opts)
   }
 
   /**

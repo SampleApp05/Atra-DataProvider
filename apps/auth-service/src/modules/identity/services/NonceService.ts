@@ -7,8 +7,10 @@ import { nonceChallenges } from '@atra/database'
 import { eq, and, isNull, gt } from 'drizzle-orm'
 
 // MARK: - Constants
+// Override via .env: NONCE_TTL_MINUTES (integer, default 5)
 
-const NONCE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+const NONCE_TTL_MS =
+  parseInt(process.env['NONCE_TTL_MINUTES'] ?? '5', 10) * 60 * 1000
 
 // MARK: - Service
 
