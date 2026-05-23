@@ -3,6 +3,7 @@
 
 import type { Request, Response } from 'express'
 import type { AccountService } from '../services/AccountService.js'
+import type { SessionService } from '../../auth/services/SessionService.js'
 
 // MARK: - Request Bodies
 
@@ -24,11 +25,13 @@ export class IdentityController {
   // MARK: Private State
 
   private readonly accountService: AccountService
+  private readonly sessionService: SessionService
 
   // MARK: Init
 
-  constructor(accountService: AccountService) {
+  constructor(accountService: AccountService, sessionService: SessionService) {
     this.accountService = accountService
+    this.sessionService = sessionService
   }
 
   // MARK: Handlers
@@ -91,9 +94,25 @@ export class IdentityController {
         signature,
         chainId
       )
+
+      const ip         = (req.headers['x-forwarded-for'] as string) ?? req.socket.remoteAddress ?? 'unknown'
+      const deviceName = (req.headers['x-device-name'] as string)   ?? 'unknown'
+      const deviceType = (req.headers['x-device-type'] as string)   ?? 'unknown'
+
+      const tokens = await this.sessionService.create(
+        result.account.id,
+        result.wallet.id,
+        deviceName,
+        deviceType,
+        ip
+      )
+
       res.status(200).json({
-        walletId: result.wallet.id,
-        accountId: result.account.id,
+        accessToken:  tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        sessionId:    tokens.sessionId,
+        accountId:    tokens.accountId,
+        walletId:     result.wallet.id,
       })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'UNKNOWN'

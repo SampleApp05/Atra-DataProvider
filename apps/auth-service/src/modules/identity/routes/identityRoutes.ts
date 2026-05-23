@@ -6,19 +6,28 @@ import { NonceService } from '../services/NonceService.js'
 import { SignatureService } from '../services/SignatureService.js'
 import { AccountService } from '../services/AccountService.js'
 import { IdentityController } from '../controllers/IdentityController.js'
+import { TokenService } from '../../auth/services/TokenService.js'
+import { SessionService } from '../../auth/services/SessionService.js'
+import { SessionRepository } from '../../auth/repositories/SessionRepository.js'
 
 // MARK: - Factory
 
 export function createIdentityRouter(db: Db): Router {
   const router = Router()
 
-  const nonceService = new NonceService(db)
+  const secret = process.env['JWT_SECRET']
+  if (!secret) throw new Error('JWT_SECRET env var is required')
+
+  const nonceService     = new NonceService(db)
   const signatureService = new SignatureService()
-  const accountService = new AccountService(db, nonceService, signatureService)
-  const controller = new IdentityController(accountService)
+  const accountService   = new AccountService(db, nonceService, signatureService)
+  const tokenService     = new TokenService(secret)
+  const sessionRepo      = new SessionRepository(db)
+  const sessionService   = new SessionService(db, tokenService, sessionRepo)
+  const controller       = new IdentityController(accountService, sessionService)
 
   router.post('/challenge', controller.challenge)
-  router.post('/verify', controller.verify)
+  router.post('/verify',    controller.verify)
 
   return router
 }

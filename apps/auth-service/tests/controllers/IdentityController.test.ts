@@ -3,6 +3,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { IdentityController } from '../../src/modules/identity/controllers/IdentityController.js'
 import type { AccountService } from '../../src/modules/identity/services/AccountService.js'
+import type { SessionService } from '../../src/modules/auth/services/SessionService.js'
 import type { Request, Response } from 'express'
 
 // MARK: - Helpers
@@ -17,13 +18,14 @@ function mockRes() {
 }
 
 function mockReq(body: Record<string, unknown> = {}): Request {
-  return { body } as Request
+  return { body, headers: {}, socket: { remoteAddress: '1.2.3.4' } } as unknown as Request
 }
 
 // MARK: - Tests
 
 describe('IdentityController', () => {
   let accountService: AccountService
+  let sessionService: SessionService
   let controller: IdentityController
 
   beforeEach(() => {
@@ -32,7 +34,16 @@ describe('IdentityController', () => {
       verifyAndProvision: vi.fn(),
     } as unknown as AccountService
 
-    controller = new IdentityController(accountService)
+    sessionService = {
+      create: vi.fn().mockResolvedValue({
+        accessToken:  'access.jwt',
+        refreshToken: 'raw-refresh',
+        sessionId:    'ses-1',
+        accountId:    'acc-1',
+      }),
+    } as unknown as SessionService
+
+    controller = new IdentityController(accountService, sessionService)
   })
 
   // MARK: challenge
@@ -117,7 +128,7 @@ describe('IdentityController', () => {
       expect(res.status).toHaveBeenCalledWith(400)
     })
 
-    it('returns 200 with walletId and accountId on success', async () => {
+    it('returns 200 with tokens on success', async () => {
       ;(accountService.verifyAndProvision as ReturnType<typeof vi.fn>).mockResolvedValue({
         wallet: { id: 'w1' },
         account: { id: 'a1' },
@@ -127,7 +138,15 @@ describe('IdentityController', () => {
       await controller.verify(mockReq(validBody), res)
 
       expect(res.status).toHaveBeenCalledWith(200)
-      expect(res.json).toHaveBeenCalledWith({ walletId: 'w1', accountId: 'a1' })
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accessToken:  'access.jwt',
+          refreshToken: 'raw-refresh',
+          sessionId:    'ses-1',
+          accountId:    'acc-1',
+          walletId:     'w1',
+        })
+      )
     })
 
     it('returns 404 for WALLET_NOT_FOUND', async () => {
