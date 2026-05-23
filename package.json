@@ -1,23 +1,43 @@
-{
-  "name": "atra-dataprovider",
-  "version": "1.0.0",
-  "description": "",
-  "type": "module",
-  "main": "dist/index.js",
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/SampleApp05/Atra-DataProvider.git"
-  },
-  "keywords": [],
-  "author": "",
+{{
+
+  "name": "atra",  "name": "atra-dataprovider",
+
+  "private": true,  "version": "1.0.0",
+
+  "version": "0.0.1",  "description": "",
+
+  "scripts": {  "type": "module",
+
+    "build": "turbo run build",  "main": "dist/index.js",
+
+    "dev": "turbo run dev",  "scripts": {
+
+    "test": "turbo run test",    "build": "tsc",
+
+    "lint": "turbo run lint",    "dev": "tsx watch src/index.ts",
+
+    "clean": "turbo run clean"    "start": "node dist/index.js",
+
+  },    "test": "vitest run",
+
+  "devDependencies": {    "test:watch": "vitest",
+
+    "turbo": "^2.0.0",    "test:coverage": "vitest run --coverage"
+
+    "typescript": "^5.4.5"  },
+
+  },  "repository": {
+
+  "engines": {    "type": "git",
+
+    "node": ">=20.0.0",    "url": "git+https://github.com/SampleApp05/Atra-DataProvider.git"
+
+    "pnpm": ">=9.0.0"  },
+
+  }  "keywords": [],
+
+}  "author": "",
+
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/SampleApp05/Atra-DataProvider/issues"
