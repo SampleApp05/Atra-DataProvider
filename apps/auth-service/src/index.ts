@@ -1,6 +1,27 @@
 // MARK: - Auth Service Entry Point
-// Phase 2.3+ — routes and middleware will be wired here
 
 import 'dotenv/config'
+import express from 'express'
+import { db } from './db/index.js'
+import { createIdentityRouter } from './modules/identity/routes/identityRoutes.js'
 
-console.log('[auth-service] Starting...')
+const app = express()
+app.use(express.json())
+
+// MARK: - Routes
+
+app.use('/identity', createIdentityRouter(db))
+
+// MARK: - Health
+
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok' })
+})
+
+// MARK: - Start
+
+const PORT = process.env.PORT ?? 3001
+
+app.listen(PORT, () => {
+  console.log(`[auth-service] Listening on port ${PORT}`)
+})
